@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --foreground: #e4e4e7;
+  --card-bg: #14141a;
+  --card-border: #2a2a35;
+  --accent: #a882ff;
+  --accent-hover: #b996ff;
+  --accent-bg: rgba(168, 130, 255, 0.1);
+  --muted: #71717a;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --chart-1: #a882ff;
+  --chart-2: #61afef;
+  --chart-3: #98c379;
+  --chart-4: #e5c07b;
+  --chart-5: #f87171;
+  --chart-6: #56b6c2;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--card-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Card style */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* Filter chip */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.15s ease;
+}
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--foreground);
+}
+.filter-chip.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Stat value */
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Metric bar (for day of week activity) */
+.metric-bar {
+  height: 28px;
+  border-radius: 6px;
+  background: var(--accent-bg);
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Tool table */
+.tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+.tool-row:last-child {
+  border-bottom: none;
+}
+
+/* Model badge */
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+/* Date input styling */
+input[type="date"] {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--foreground);
+  font-size: 13px;
+  outline: none;
+}
+input[type="date"]:focus {
+  border-color: var(--accent);
+}
+
+/* Select styling */
+select {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--foreground);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+select:focus {
+  border-color: var(--accent);
+}
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--card-border);
+  border-radius: 2px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 2px solid var(--card-bg);
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fadeIn 0.3s ease-out;
+}
