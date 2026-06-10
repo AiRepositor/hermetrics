@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
     });
 
     const data = JSON.parse(output);
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    return response;
   } catch (error: any) {
     console.error('Analytics API error:', error);
     return NextResponse.json(

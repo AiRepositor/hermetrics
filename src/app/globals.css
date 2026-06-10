@@ -185,3 +185,18 @@ input[type="range"]::-webkit-slider-thumb {
 .animate-in {
   animation: fadeIn 0.3s ease-out;
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+/* Responsive mobile layout */
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
