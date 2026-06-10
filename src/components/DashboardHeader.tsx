@@ -12,7 +12,7 @@ export function DashboardHeader({ firstSession, lastSession, onRefresh, onExport
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
       <div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Hermes Token Analytics</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Hermetrics</h1>
         <p style={{ color: '#71717a', fontSize: 14, margin: '4px 0 0' }}>
           {new Date(firstSession * 1000).toLocaleDateString()} — {new Date(lastSession * 1000).toLocaleDateString()}
         </p>

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hermes Token Analytics",
-  description: "Usage analytics dashboard for Hermes Agent",
+  title: "Hermetrics — Token Analytics for Hermes Agent",
+  description: "Beautiful token usage analytics for Hermes Agent",
 };
 
 export default function RootLayout({

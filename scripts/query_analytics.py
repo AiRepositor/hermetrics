@@ -39,8 +39,8 @@ def main():
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute("""
-            SELECT id, role, content, token_count, tool_name, tool_input, created_at
-            FROM messages WHERE session_id = ? ORDER BY created_at ASC
+            SELECT id, role, content, token_count, tool_name, tool_calls, timestamp
+            FROM messages WHERE session_id = ? ORDER BY timestamp ASC
         """, [session_id])
         rows = [dict(r) for r in cur.fetchall()]
         conn.close()
@@ -218,9 +218,8 @@ def main():
 
     # --- Messages by role (last 1000 for sample) ---
     cur.execute("""
-        SELECT role, COUNT(*) as count, SUM(token_count) as total_tokens
+        SELECT role, COUNT(*) as count
         FROM messages
-        WHERE token_count IS NOT NULL
         GROUP BY role
     """)
     result["messages_by_role"] = [dict(r) for r in cur.fetchall()]

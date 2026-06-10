@@ -1,52 +1,99 @@
-# Hermes Token Analytics
+# Hermetrics
 
-A live analytics dashboard for [Hermes Agent](https://github.com/NousResearch/hermes-agent) token usage, built with Next.js 16.
+<p align="center">
+  <img src="assets/screenshot.png" alt="Hermetrics Dashboard" width="800">
+</p>
+
+<p align="center">
+  <b>Beautiful token usage analytics for Hermes Agent.</b> Track every token, every dollar, every session — in a single dashboard.<br>
+  <em>Zero config. One command. Works offline.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/AiRepositor/hermetrics/actions"><img src="https://img.shields.io/github/actions/workflow/status/AiRepositor/hermetrics/deploy.yml?label=deploy" alt="Deploy"></a>
+  <a href="https://github.com/AiRepositor/hermetrics"><img src="https://img.shields.io/github/stars/AiRepositor/hermetrics?style=social" alt="Stars"></a>
+</p>
+
+---
+
+## Quick Start
+
+```bash
+npx degit AiRepositor/hermetrics hermetrics
+cd hermetrics && npm install && npm run dev
+```
+
+Open `http://localhost:3000` — the dashboard loads your Hermes data from `~/.hermes/state.db`.
 
 ## Features
 
-- **Token usage over time** — daily/weekly area chart with input/output breakdown
-- **Model breakdown** — pie chart showing token distribution across models
-- **Activity patterns** — day-of-week bar chart, hourly distribution
-- **Cost tracking** — estimated cost over time (for paid models)
-- **Top tools** — ranked tool usage with percentage bars
-- **Top sessions** — expandable table sorted by token consumption
-- **Session sources** — breakdown by entry point (CLI, gateway, etc.)
-- **Filters** — date range (7/14/30/90 days), granularity (daily/weekly), model selector
-- **Live refresh** — always reads fresh data from state.db
+| Feature | |
+|---|---|
+| **📊 Live token tracking** | Input, output, cache reads, reasoning tokens |
+| **💰 Cost monitoring** | Estimated & actual cost per model, per day |
+| **📈 Time series charts** | Hourly · Daily · Weekly — with zoom/brush |
+| **🔥 Activity heatmap** | See your busiest hours at a glance (day × hour matrix) |
+| **📉 Trend indicators** | ↑↓ % change vs previous period on every stat |
+| **🤖 Model breakdown** | Donut chart + legend — who's eating your tokens? |
+| **🔧 Tool analytics** | Ranked tool usage with proportion bars |
+| **🔗 Session inspector** | Click any session → drill into messages and tool calls |
+| **🔍 Sortable tables** | Click column headers to rank sessions by tokens, cost, messages |
+| **📱 Responsive** | Works on desktop, tablet, and phone |
+| **📤 CSV export** | Download filtered data with one click |
+| **🔗 Shareable URLs** | Filters persist in the URL — `/`?days=7&model=deepseek-v4-pro |
+| **🧪 Live demo mode** | No state.db? No problem — sample data loads automatically |
 
-## How It Works
+## Architecture
 
-The dashboard reads directly from Hermes' SQLite session store at `~/.hermes/state.db` (read-only) via a Python script called from the Next.js API route. No database writes, no external dependencies — just your local Hermes data.
-
-## Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Run the development server
-npm run dev
-
-# Open http://localhost:3000
+```
+~/.hermes/state.db  →  scripts/query_analytics.py  →  /api/analytics  →  React dashboard
+       (read-only)         (SQL → JSON)               (Next.js route)     (Recharts + Lucide)
 ```
 
-### Production Build
+**Zero writes.** The Python script only runs `SELECT` queries against Hermes' state database.
+
+## Customize
 
 ```bash
-npm run build
-npm start
+# Date range
+http://localhost:3000/?days=90
+
+# Granularity
+http://localhost:3000/?granularity=hour
+
+# Filter by model
+http://localhost:3000/?model=deepseek-v4-flash
+
+# Combine
+http://localhost:3000/?days=30&granularity=day&model=gpt-5.3-codex
 ```
 
-## Tech Stack
+## Deploy
 
-- **Next.js 16** (App Router)
-- **Recharts** — composable chart library
-- **Tailwind CSS 4** — styling
-- **Lucide React** — icons
-- **Python 3** — SQLite querying via `sqlite3` stdlib
+### GitHub Pages (free)
 
-## Requirements
+Push to `main` — the included GitHub Action builds and deploys to `AiRepositor.github.io/hermetrics`.
 
-- Node.js 18+
-- Python 3 (with `sqlite3` stdlib module)
-- Hermes Agent with an existing session database (`~/.hermes/state.db`)
+### Self-hosted
+
+```bash
+npm run build && npm start
+```
+
+## Compared to
+
+| | Hermetrics | Langfuse | Helicone | Manual `grep` |
+|---|---|---|---|---|
+| **Setup** | 1 command | Docker + DB | API keys | — |
+| **Cost** | Free | Free tier | Free tier | Free |
+| **Data stays local** | ✅ | ❌ | ❌ | ✅ |
+| **Model breakdown** | ✅ | ✅ | ✅ | ❌ |
+| **Session drill-down** | ✅ | ✅ | ✅ | ❌ |
+| **Activity heatmap** | ✅ | ❌ | ❌ | ❌ |
+| **Trend comparison** | ✅ | ✅ | ✅ | ❌ |
+| **No account needed** | ✅ | ❌ | ❌ | ✅ |
+| **No internet required** | ✅ | ❌ | ❌ | ✅ |
+
+## License
+
+MIT

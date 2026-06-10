@@ -26,6 +26,7 @@ export function DashboardShell() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSampleData, setIsSampleData] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -40,7 +41,12 @@ export function DashboardShell() {
       const json = await res.json();
       setData(json);
     } catch (e: any) {
-      setError(e.message);
+      // Fall back to sample data when API is unavailable (e.g., GitHub Pages)
+      console.warn('API unavailable, using sample data:', e.message);
+      const { sampleData } = await import('@/lib/sampleData');
+      setData(sampleData);
+      setIsSampleData(true);
+      setError(null); // clear error, we're using sample data
     } finally {
       setLoading(false);
     }
@@ -110,7 +116,7 @@ export function DashboardShell() {
       s.estimated_cost_usd.toFixed(2),
       new Date(s.started_at * 1000).toLocaleDateString(),
     ]);
-    downloadCSV(`hermes-sessions-${dateStr}.csv`, headers, rows);
+    downloadCSV(`hermetrics-sessions-${dateStr}.csv`, headers, rows);
   }, [data]);
 
   // ─── Loading / Error ───
@@ -167,6 +173,16 @@ export function DashboardShell() {
         onExportCSV={handleExportCSV}
       />
 
+      {isSampleData && (
+        <div style={{
+          background: '#1a1a2e', border: '1px solid #2a2a45', borderRadius: 8,
+          padding: '8px 16px', marginBottom: 16, fontSize: 13, color: '#a882ff',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          📊 Live demo — install locally for your own data
+        </div>
+      )}
+
       <FilterBar
         timeRange={timeRange}
         granularity={granularity}
@@ -208,7 +224,7 @@ export function DashboardShell() {
 
       {/* ─── Footer ─── */}
       <div style={{ textAlign: 'center', color: '#52525b', fontSize: 12, paddingTop: 16, borderTop: '1px solid #1e1e28' }}>
-        Hermes Token Analytics · Data from ~/.hermes/state.db · {new Date().toLocaleString()}
+        Hermetrics · Data from ~/.hermes/state.db · {new Date().toLocaleString()}
       </div>
 
       <style>{`
