@@ -11,8 +11,13 @@ interface HourlyDistributionProps {
 }
 
 export function HourlyDistribution({ hourly }: HourlyDistributionProps) {
+  const isEmpty = !hourly || hourly.length === 0;
+
   return (
-    <ChartCard title="Hourly Distribution" icon={<Clock size={16} style={{ color: '#56b6c2' }} />} span={2}>
+    <ChartCard title="Hourly Distribution" icon={<Clock size={16} style={{ color: '#56b6c2' }} />} span={2}
+      isEmpty={isEmpty}
+      emptyMessage="No activity recorded"
+    >
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={hourly}>
           <CartesianGrid strokeDasharray="3 3" stroke="#2a2a35" />

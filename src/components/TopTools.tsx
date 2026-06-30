@@ -8,8 +8,13 @@ interface TopToolsProps {
 }
 
 export function TopTools({ tools }: TopToolsProps) {
+  const isEmpty = !tools || tools.length === 0;
+
   return (
-    <ChartCard title="Top Tools" icon={<MousePointerClick size={16} style={{ color: '#f87171' }} />}>
+    <ChartCard title="Top Tools" icon={<MousePointerClick size={16} style={{ color: '#f87171' }} />}
+      isEmpty={isEmpty}
+      emptyMessage="No tool calls recorded"
+    >
       <div>
         {tools.map((t, i) => (
           <div key={i} className="tool-row">

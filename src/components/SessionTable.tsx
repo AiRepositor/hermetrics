@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Activity, ChevronDown, ChevronRight } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import type { SessionStat } from '@/lib/types';
 import { fmtTokens as fmt, fmtTimestamp as fmtTime } from '@/lib/formatters';
 import { useSortableData } from '@/hooks/useSortableData';
@@ -43,6 +43,7 @@ function SortableHeader({ field, label, align, sort, onToggle }: SortableHeaderP
 
 export function SessionTable({ sessions, sortable = true, onSessionClick }: SessionTableProps) {
   const [expanded, setExpanded] = useState(false);
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const { sorted, sort, toggleSort } = useSortableData(sessions, 'total_tokens', 'desc');
 
   const displaySessions = sortable ? sorted : sessions;
@@ -101,8 +102,15 @@ export function SessionTable({ sessions, sortable = true, onSessionClick }: Sess
               {displaySessions.map((s, i) => (
                 <tr
                   key={i}
-                  style={{ borderBottom: '1px solid #1e1e28', cursor: onSessionClick ? 'pointer' : 'default' }}
+                  style={{
+                    borderBottom: '1px solid #1e1e28',
+                    cursor: onSessionClick ? 'pointer' : 'default',
+                    background: hoveredRow === i ? '#1e1e28' : 'transparent',
+                    transition: 'background 0.15s ease',
+                  }}
                   onClick={() => onSessionClick?.(s.id)}
+                  onMouseEnter={() => setHoveredRow(i)}
+                  onMouseLeave={() => setHoveredRow(null)}
                 >
                   <td
                     style={{
@@ -111,9 +119,15 @@ export function SessionTable({ sessions, sortable = true, onSessionClick }: Sess
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
                     }}
                   >
                     {s.title || 'Untitled'}
+                    {onSessionClick && hoveredRow === i && (
+                      <ExternalLink size={12} style={{ color: '#52525b', flexShrink: 0 }} />
+                    )}
                   </td>
                   <td style={{ padding: '8px 12px' }}>
                     <span className="model-badge">{s.model || '\u2014'}</span>

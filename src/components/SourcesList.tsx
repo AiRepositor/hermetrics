@@ -7,10 +7,14 @@ interface SourcesListProps {
 }
 
 export function SourcesList({ sources }: SourcesListProps) {
-  const maxSessions = Math.max(...sources.map(x => x.sessions));
+  const maxSessions = Math.max(...sources.map(x => x.sessions), 1);
+  const isEmpty = !sources || sources.length === 0;
 
   return (
-    <ChartCard title="Sources" icon={<ExternalLink size={16} style={{ color: '#61afef' }} />}>
+    <ChartCard title="Sources" icon={<ExternalLink size={16} style={{ color: '#61afef' }} />}
+      isEmpty={isEmpty}
+      emptyMessage="No sources recorded"
+    >
       <div>
         {sources.map((s, i) => {
           const pct = maxSessions > 0 ? (s.sessions / maxSessions * 100) : 0;

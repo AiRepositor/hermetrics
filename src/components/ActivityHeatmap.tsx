@@ -9,9 +9,13 @@ interface ActivityHeatmapProps {
 }
 
 export function ActivityHeatmap({ heatmap }: ActivityHeatmapProps) {
+  // Check if empty
+  const entries = Object.entries(heatmap || {});
+  const isEmpty = entries.length === 0 || entries.every(([, v]) => (v.total_tokens ?? 0) === 0);
+
   // Find max token count for color scaling
   let maxTokens = 1;
-  for (const key of Object.keys(heatmap)) {
+  for (const key of Object.keys(heatmap || {})) {
     const val = heatmap[key];
     if (val && val.total_tokens > maxTokens) {
       maxTokens = val.total_tokens;
@@ -21,7 +25,6 @@ export function ActivityHeatmap({ heatmap }: ActivityHeatmapProps) {
   // Interpolate from dark empty to bright purple
   const getColor = (tokens: number): string => {
     const ratio = maxTokens > 0 ? tokens / maxTokens : 0;
-    // Dark: #2a2a35 at 40% opacity, Bright: rgb(168, 130, 255)
     const r = Math.round(42 * (1 - ratio) + 168 * ratio);
     const g = Math.round(42 * (1 - ratio) + 130 * ratio);
     const b = Math.round(53 * (1 - ratio) + 255 * ratio);
@@ -36,6 +39,8 @@ export function ActivityHeatmap({ heatmap }: ActivityHeatmapProps) {
       title="Activity Heatmap"
       icon={<Calendar size={16} style={{ color: '#e5c07b' }} />}
       span={2}
+      isEmpty={isEmpty}
+      emptyMessage="No activity data"
     >
       <div>
         {/* Hour column headers */}
@@ -90,7 +95,7 @@ export function ActivityHeatmap({ heatmap }: ActivityHeatmapProps) {
             {/* Hour cells */}
             {hours.map((hour) => {
               const key = `${dow}_${hour}`;
-              const cell = heatmap[key];
+              const cell = heatmap?.[key];
               const tokens = cell?.total_tokens ?? 0;
               const sessions = cell?.sessions ?? 0;
 

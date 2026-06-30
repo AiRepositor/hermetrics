@@ -12,8 +12,13 @@ interface ModelPieChartProps {
 }
 
 export function ModelPieChart({ models }: ModelPieChartProps) {
+  const isEmpty = !models || models.length === 0;
+
   return (
-    <ChartCard title="Model Breakdown" icon={<Cpu size={16} style={{ color: '#98c379' }} />}>
+    <ChartCard title="Model Breakdown" icon={<Cpu size={16} style={{ color: '#98c379' }} />}
+      isEmpty={isEmpty}
+      emptyMessage="No model data available"
+    >
       <ResponsiveContainer width="100%" height={260}>
         <PieChart>
           <Pie

@@ -25,10 +25,21 @@ html {
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(ellipse at 50% 0%, rgba(168,130,255,0.03) 0%, transparent 60%), var(--background);
   color: var(--foreground);
   font-family: 'Geist', system-ui, -apple-system, sans-serif;
 }
+
+/* Smooth page transitions */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+}
+
+/* Typography hierarchy */
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.03em; }
+h2 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+h3 { font-size: 14px; font-weight: 600; }
+.mono { font-family: 'Geist Mono', monospace; font-size: 12px; }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -52,6 +63,12 @@ body {
   border: 1px solid var(--card-border);
   border-radius: 12px;
   padding: 20px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  border-color: rgba(168,130,255,0.2);
 }
 
 /* Filter chip */
@@ -81,7 +98,7 @@ body {
 
 /* Stat value */
 .stat-value {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;

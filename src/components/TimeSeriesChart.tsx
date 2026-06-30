@@ -11,8 +11,13 @@ interface TimeSeriesChartProps {
 }
 
 export function TimeSeriesChart({ timeSeriesData, granularity }: TimeSeriesChartProps) {
+  const isEmpty = !timeSeriesData || timeSeriesData.length === 0;
+
   return (
-    <ChartCard title="Token Usage Over Time" icon={<TrendingUp size={16} style={{ color: '#a882ff' }} />} span={2}>
+    <ChartCard title="Token Usage Over Time" icon={<TrendingUp size={16} style={{ color: '#a882ff' }} />} span={2}
+      isEmpty={isEmpty}
+      emptyMessage="No activity in this time range"
+    >
       <ResponsiveContainer width="100%" height={280}>
         <AreaChart data={timeSeriesData}>
           <defs>

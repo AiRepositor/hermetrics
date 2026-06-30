@@ -9,10 +9,14 @@ interface DayOfWeekBarsProps {
 }
 
 export function DayOfWeekBars({ data }: DayOfWeekBarsProps) {
-  const maxTokens = Math.max(...data.map(x => x.total_tokens));
+  const maxTokens = Math.max(...data.map(x => x.total_tokens), 1);
+  const isEmpty = !data || data.length === 0;
 
   return (
-    <ChartCard title="Activity by Day of Week" icon={<Calendar size={16} style={{ color: '#e5c07b' }} />}>
+    <ChartCard title="Activity by Day of Week" icon={<Calendar size={16} style={{ color: '#e5c07b' }} />}
+      isEmpty={isEmpty}
+      emptyMessage="No activity recorded"
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {data.map((d) => {
           const pct = maxTokens > 0 ? (d.total_tokens / maxTokens * 100) : 0;

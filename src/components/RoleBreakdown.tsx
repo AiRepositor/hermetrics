@@ -23,7 +23,7 @@ export function RoleBreakdown({ data }: { data: RoleBreakdownData[] }) {
         title="Messages by Role"
         icon={<MessageSquare size={16} style={{ color: '#56b6c2' }} />}
         isEmpty
-        emptyMessage="No role data available"
+        emptyMessage="No messages recorded"
       >
         {null}
       </ChartCard>

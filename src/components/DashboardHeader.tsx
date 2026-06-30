@@ -1,5 +1,6 @@
 'use client';
-import { RefreshCw, Download } from 'lucide-react';
+import { useState } from 'react';
+import { RefreshCw, Download, Clipboard } from 'lucide-react';
 
 interface DashboardHeaderProps {
   firstSession: number;
@@ -9,6 +10,26 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ firstSession, lastSession, onRefresh, onExportCSV }: DashboardHeaderProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const input = document.createElement('input');
+      input.value = window.location.href;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
       <div>
@@ -27,6 +48,14 @@ export function DashboardHeader({ firstSession, lastSession, onRefresh, onExport
             <Download size={14} /> Export CSV
           </button>
         )}
+        <button onClick={handleCopyLink} style={{
+          background: 'transparent', border: '1px solid #2a2a35', borderRadius: 8,
+          padding: '8px 14px', color: copied ? '#4ade80' : '#71717a', cursor: 'pointer', fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 6,
+          transition: 'color 0.15s ease',
+        }}>
+          <Clipboard size={14} /> {copied ? 'Copied!' : 'Copy Link'}
+        </button>
         <button onClick={onRefresh} style={{
           background: 'transparent', border: '1px solid #2a2a35', borderRadius: 8,
           padding: '8px 14px', color: '#71717a', cursor: 'pointer', fontSize: 13,

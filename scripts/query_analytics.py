@@ -218,7 +218,7 @@ def main():
 
     # --- Messages by role (last 1000 for sample) ---
     cur.execute("""
-        SELECT role, COUNT(*) as count
+        SELECT role, COUNT(*) as count, COALESCE(SUM(token_count), 0) as total_tokens
         FROM messages
         GROUP BY role
     """)

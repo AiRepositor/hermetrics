@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RefreshCw } from 'lucide-react';
 import type { AnalyticsData } from '@/lib/types';
 import { fmtDate } from '@/lib/formatters';
@@ -28,6 +28,19 @@ export function DashboardShell() {
   const [error, setError] = useState<string | null>(null);
   const [isSampleData, setIsSampleData] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Keyboard shortcut: Ctrl+K / Cmd+K to focus filters
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        filterButtonRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -166,32 +179,36 @@ export function DashboardShell() {
         </div>
       )}
 
-      <DashboardHeader
-        firstSession={o.first_session}
-        lastSession={o.last_session}
-        onRefresh={fetchData}
-        onExportCSV={handleExportCSV}
-      />
+      {/* ─── Sticky header + filter bar ─── */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(10,10,15,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #2a2a35', paddingBottom: 12, marginBottom: 24 }}>
+        <DashboardHeader
+          firstSession={o.first_session}
+          lastSession={o.last_session}
+          onRefresh={fetchData}
+          onExportCSV={handleExportCSV}
+        />
 
-      {isSampleData && (
-        <div style={{
-          background: '#1a1a2e', border: '1px solid #2a2a45', borderRadius: 8,
-          padding: '8px 16px', marginBottom: 16, fontSize: 13, color: '#a882ff',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          📊 Live demo — install locally for your own data
-        </div>
-      )}
+        {isSampleData && (
+          <div style={{
+            background: '#1a1a2e', border: '1px solid #2a2a45', borderRadius: 8,
+            padding: '8px 16px', marginBottom: 16, fontSize: 13, color: '#a882ff',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            📊 Live demo — install locally for your own data
+          </div>
+        )}
 
-      <FilterBar
-        timeRange={timeRange}
-        granularity={granularity}
-        modelFilter={modelFilter}
-        models={modelList}
-        onTimeRangeChange={setTimeRange}
-        onGranularityChange={setGranularity}
-        onModelFilterChange={setModelFilter}
-      />
+        <FilterBar
+          timeRange={timeRange}
+          granularity={granularity}
+          modelFilter={modelFilter}
+          models={modelList}
+          onTimeRangeChange={setTimeRange}
+          onGranularityChange={setGranularity}
+          onModelFilterChange={setModelFilter}
+          filterButtonRef={filterButtonRef}
+        />
+      </div>
 
       <StatCards
         overview={o}
@@ -209,7 +226,7 @@ export function DashboardShell() {
         <TopTools tools={topToolsWithPercent} />
         <SourcesList sources={data.sources} />
         <ActivityHeatmap heatmap={data.heatmap} />
-        {data.messages_by_role && data.messages_by_role.length > 0 && (
+        {data.messages_by_role !== undefined && (
           <RoleBreakdown data={data.messages_by_role} />
         )}
       </div>
