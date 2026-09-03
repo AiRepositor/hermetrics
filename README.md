@@ -1,18 +1,7 @@
 # Hermetrics
 
-<p align="center">
-  <img src="assets/screenshot.png" alt="Hermetrics Dashboard" width="800">
-</p>
-
-<p align="center">
-  <b>Beautiful token usage analytics for Hermes Agent.</b> Track every token, every dollar, every session — in a single dashboard.<br>
-  <em>Zero config. One command. Works offline.</em>
-</p>
-
-<p align="center">
-  <a href="https://github.com/AiRepositor/hermetrics/actions"><img src="https://img.shields.io/github/actions/workflow/status/AiRepositor/hermetrics/deploy.yml?label=deploy" alt="Deploy"></a>
-  <a href="https://github.com/AiRepositor/hermetrics"><img src="https://img.shields.io/github/stars/AiRepositor/hermetrics?style=social" alt="Stars"></a>
-</p>
+<b>Beautiful token usage analytics for Hermes Agent.</b> Track every token, every dollar, every session — in a single dashboard.<br>
+<em>Zero config. One command. Works offline.</em>
 
 ---
 
@@ -68,17 +57,25 @@ http://localhost:3000/?model=deepseek-v4-flash
 http://localhost:3000/?days=30&granularity=day&model=gpt-5.3-codex
 ```
 
-## Deploy
+## Deploy (self-hosted)
 
-### GitHub Pages (free)
+Hermetrics needs a Node server with access to the Hermes state database. **Static hosting
+(GitHub Pages, Vercel static export, ...) is not supported**: the `/api/*` routes that read
+`~/.hermes/state.db` require server-side Python, and on a static host the dashboard silently
+falls back to sample data instead of your real usage.
 
-Push to `main` — the included GitHub Action builds and deploys to `AiRepositor.github.io/hermetrics`.
-
-### Self-hosted
+Requirements on the host: Node.js 20+, Python 3, and read access to the Hermes database
+(`~/.hermes/state.db` by default; set `HERMES_HOME` to point elsewhere).
 
 ```bash
-npm run build && npm start
+npm ci
+npm run build
+npm start
 ```
+
+Then open `http://localhost:3000`. Each API request shells out to
+`python3 scripts/query_analytics.py` (SELECT-only), so run it on the same machine — and
+ideally the same user — as Hermes itself. Wrap it in `pm2`/`systemd` if you want it always on.
 
 ## Compared to
 

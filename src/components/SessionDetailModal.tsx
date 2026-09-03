@@ -1,16 +1,23 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { X, User, Bot, Wrench } from 'lucide-react';
+import { X, User, Bot, Wrench, ChevronDown, ChevronRight } from 'lucide-react';
 import { fmtTokens } from '@/lib/formatters';
 
+interface ToolCall {
+  id?: string;
+  call_id?: string;
+  type?: string;
+  function?: { name?: string; arguments?: string };
+}
+
 interface Message {
-  id: string;
+  id: string | number;
   role: string;
-  content: string;
-  token_count: number;
+  content: string | null;
+  token_count: number | null;
   tool_name: string | null;
-  tool_input: string | null;
-  created_at: string;
+  tool_calls: string | null; // JSON string from query_analytics.py
+  timestamp: number | null;  // unix seconds
 }
 
 interface SessionDetailModalProps {
@@ -18,13 +25,26 @@ interface SessionDetailModalProps {
   onClose: () => void;
 }
 
-function fmtTime(ts: string): string {
+function fmtTime(ts: number | string | null): string {
+  if (ts == null) return '';
+  const ms = typeof ts === 'number' ? ts * 1000 : Date.parse(ts);
+  if (isNaN(ms)) return '';
   try {
-    return new Date(ts).toLocaleString('en-US', {
+    return new Date(ms).toLocaleString('en-US', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
     });
   } catch {
-    return ts;
+    return String(ts);
+  }
+}
+
+function parseToolCalls(raw: string | null): ToolCall[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return null;
   }
 }
 
@@ -46,7 +66,7 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedTool, setExpandedTool] = useState<string | null>(null);
+  const [expandedTool, setExpandedTool] = useState<string | number | null>(null);
 
   useEffect(() => {
     if (!sessionId) {
@@ -126,10 +146,14 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
           )}
           {!loading && !error && messages.map((msg) => {
             const roleStyle = roleColors[msg.role] || roleColors.tool;
+            const calls = parseToolCalls(msg.tool_calls);
             const isToolExpanded = expandedTool === msg.id;
+            const toolLabel =
+              msg.tool_name ??
+              (calls && calls.length > 1 ? `${calls.length} tool calls` : 'tool call');
             return (
               <div
-                key={msg.id}
+                key={String(msg.id)}
                 style={{
                   borderBottom: '1px solid #1e1e28',
                   padding: '10px 0',
@@ -147,16 +171,18 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
                     {roleIcons[msg.role] || null}
                     {msg.role}
                   </span>
-                  <span style={{ color: '#52525b' }}>{fmtTime(msg.created_at)}</span>
-                  {msg.token_count > 0 && (
+                  {fmtTime(msg.timestamp) && (
+                    <span style={{ color: '#52525b' }}>{fmtTime(msg.timestamp)}</span>
+                  )}
+                  {msg.token_count != null && msg.token_count > 0 && (
                     <span style={{ color: '#71717a', marginLeft: 'auto' }}>
                       {fmtTokens(msg.token_count)} tokens
                     </span>
                   )}
                 </div>
 
-                {/* Tool call badge */}
-                {msg.tool_name && (
+                {/* Tool badge / expandable payload */}
+                {(msg.tool_name || calls) && (
                   <div style={{ marginBottom: 4 }}>
                     <button
                       onClick={() => setExpandedTool(isToolExpanded ? null : msg.id)}
@@ -164,20 +190,40 @@ export function SessionDetailModal({ sessionId, onClose }: SessionDetailModalPro
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         padding: '2px 8px', borderRadius: 6, fontSize: 11,
                         background: '#1e1e28', color: '#d19a66', border: '1px solid #2a2a35',
-                        cursor: 'pointer',
+                        cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
+                      {isToolExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                       <Wrench size={11} />
-                      {msg.tool_name}
+                      {toolLabel}
                     </button>
-                    {isToolExpanded && msg.tool_input && (
+                    {isToolExpanded && (
                       <pre style={{
                         marginTop: 6, padding: 8, borderRadius: 6,
                         background: '#0a0a0f', color: '#71717a',
-                        fontSize: 11, overflow: 'auto', maxHeight: 160,
+                        fontSize: 11, overflow: 'auto', maxHeight: 200,
                         whiteSpace: 'pre-wrap', wordBreak: 'break-all',
                       }}>
-                        {typeof msg.tool_input === 'string' ? msg.tool_input : JSON.stringify(msg.tool_input, null, 2)}
+                        {calls
+                          ? calls.map((c, i) => (
+                              <div key={i} style={{ marginBottom: i < calls.length - 1 ? 8 : 0 }}>
+                                {c.function?.name && (
+                                  <div style={{ color: '#d19a66', marginBottom: 2 }}>ƒ {c.function.name}</div>
+                                )}
+                                {c.function?.arguments
+                                  ? (() => {
+                                      try {
+                                        return JSON.stringify(JSON.parse(c.function.arguments), null, 2);
+                                      } catch {
+                                        return c.function.arguments;
+                                      }
+                                    })()
+                                  : JSON.stringify(c, null, 2)}
+                              </div>
+                            ))
+                          : (msg.tool_name && msg.content)
+                            ? msg.content
+                            : JSON.stringify(msg, null, 2)}
                       </pre>
                     )}
                   </div>
