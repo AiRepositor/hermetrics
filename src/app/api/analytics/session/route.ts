@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { spawnSync } from 'child_process';
 import path from 'path';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get('id');

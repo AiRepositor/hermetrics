@@ -49,7 +49,14 @@ export function DashboardShell() {
       const params = new URLSearchParams();
       params.set('days', String(timeRange));
       if (modelFilter !== 'all') params.set('model', modelFilter);
-      const res = await fetch(`/api/analytics?${params}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      let res: Response;
+      try {
+        res = await fetch(`/api/analytics?${params}`, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeout);
+      }
       if (!res.ok) throw new Error(await res.text());
       const json = await res.json();
       setData(json);

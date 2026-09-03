@@ -6,7 +6,14 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-DB_PATH = os.path.expanduser("~/.hermes/state.db")
+def _resolve_db_path():
+    """Resolve state.db: $HERMES_HOME wins, else ~/.hermes/state.db."""
+    hermes_home = os.environ.get("HERMES_HOME")
+    if hermes_home:
+        return os.path.join(hermes_home, "state.db")
+    return os.path.expanduser("~/.hermes/state.db")
+
+DB_PATH = _resolve_db_path()
 
 
 def build_where(filters):
