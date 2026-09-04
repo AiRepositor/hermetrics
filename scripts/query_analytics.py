@@ -6,14 +6,76 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-def _resolve_db_path():
-    """Resolve state.db: $HERMES_HOME wins, else ~/.hermes/state.db."""
-    hermes_home = os.environ.get("HERMES_HOME")
-    if hermes_home:
-        return os.path.join(hermes_home, "state.db")
-    return os.path.expanduser("~/.hermes/state.db")
+def _find_db_paths():
+    """All state.db files to merge: default profile first, then each named profile."""
+    hermes_home = os.environ.get("HERMES_HOME") or os.path.expanduser("~/.hermes")
+    dbs = [os.path.join(hermes_home, "state.db")]
+    profiles_dir = os.path.join(hermes_home, "profiles")
+    if os.path.isdir(profiles_dir):
+        for name in sorted(os.listdir(profiles_dir)):
+            candidate = os.path.join(profiles_dir, name, "state.db")
+            if os.path.isfile(candidate):
+                dbs.append(candidate)
+    return [d for d in dbs if os.path.isfile(d)]
 
-DB_PATH = _resolve_db_path()
+
+def _open_merged():
+    """Open an in-memory connection merging sessions/messages from every profile DB.
+
+    Rows are deduplicated by primary key; the default profile's copy wins when a
+    session/message id appears in multiple DBs (profile DBs mirror shared rows).
+    Column order can differ between DBs, so every insert maps columns explicitly
+    rather than relying on positional `SELECT *`.
+    """
+    dbs = _find_db_paths()
+    if not dbs:
+        raise FileNotFoundError("No state.db found under " + os.environ.get("HERMES_HOME", "~/.hermes"))
+    conn = sqlite3.connect(":memory:")
+
+    def table_columns(db_path, table):
+        try:
+            src = sqlite3.connect(db_path)
+            cols = [c[1] for c in src.execute(f"PRAGMA table_info({table})")]
+            src.close()
+            return cols or None
+        except sqlite3.OperationalError:
+            return None
+
+    tables_pk = (("sessions", "id"), ("messages", "id"))
+    # Canonical column order = first DB that has the table.
+    canonical = {}
+    for table, _pk in tables_pk:
+        cols = next((table_columns(d, table) for d in dbs if table_columns(d, table)), None)
+        if cols:
+            canonical[table] = cols
+
+    seeded = set()
+    for i, db_path in enumerate(dbs):
+        tag = f"db{i}"
+        conn.execute(f"ATTACH DATABASE ? AS {tag}", [db_path])
+        for table, pk in tables_pk:
+            src_cols = table_columns(db_path, table)
+            if not src_cols or table not in canonical:
+                continue
+            cols = canonical[table]
+            missing = [c for c in cols if c not in src_cols]
+            if table not in seeded:
+                # First DB that actually has the table seeds it.
+                conn.execute(
+                    f"CREATE TEMP TABLE {table} AS SELECT " + ", ".join(cols) + f" FROM {tag}.{table}"
+                )
+                seeded.add(table)
+            else:
+                # Later DBs: insert only rows whose pk is not already present.
+                select_expr = []
+                for c in cols:
+                    select_expr.append(c if c in src_cols else f"NULL AS {c}")
+                conn.execute(
+                    f"INSERT INTO {table} SELECT " + ", ".join(select_expr) +
+                    f" FROM {tag}.{table} WHERE {pk} NOT IN (SELECT {pk} FROM {table})"
+                )
+
+    return conn, dbs
 
 
 def build_where(filters):
@@ -22,6 +84,8 @@ def build_where(filters):
     params = []
 
     days = filters.get("days", 365 * 10)
+    if not isinstance(days, (int, float)) or isinstance(days, bool) or days <= 0:
+        raise ValueError(f"Invalid 'days' filter: {days!r} (must be a positive number)")
     cutoff_ts = int((datetime.now() - timedelta(days=days)).timestamp())
     clauses.append("started_at >= ?")
     params.append(cutoff_ts)
@@ -42,7 +106,7 @@ def main():
             print(json.dumps({"error": "Missing session id argument"}))
             sys.exit(1)
         session_id = sys.argv[idx + 1]
-        conn = sqlite3.connect(DB_PATH)
+        conn, _ = _open_merged()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute("""
@@ -57,7 +121,7 @@ def main():
     filters = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
     where_clause, where_params, cutoff_ts = build_where(filters)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn, _dbs = _open_merged()
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
@@ -89,7 +153,7 @@ def main():
     now_ts = int(datetime.now().timestamp())
     period_length = now_ts - cutoff_ts
     prev_cutoff = cutoff_ts - period_length
-    prev_params = where_params.copy()
+    prev_params = list(where_params)
     prev_params[0] = prev_cutoff  # started_at >= prev_cutoff
     cur.execute(f"""
         SELECT
@@ -98,8 +162,8 @@ def main():
             COALESCE(SUM(tool_call_count), 0) as tool_calls,
             COALESCE(SUM(estimated_cost_usd), 0) as estimated_cost
         FROM sessions
-        WHERE started_at >= ? AND started_at < ?
-    """, [prev_cutoff, cutoff_ts])
+        WHERE {where_clause} AND started_at < ?
+    """, prev_params + [cutoff_ts])
     prev_row = dict(cur.fetchone())
     result["prev_overview"] = prev_row
 
@@ -119,14 +183,22 @@ def main():
     """, where_params)
     result["models"] = [dict(r) for r in cur.fetchall()]
 
+    # --- All models (unfiltered, for the model dropdown) ---
+    cur.execute("""
+        SELECT DISTINCT model FROM sessions
+        WHERE model IS NOT NULL AND model != ''
+        ORDER BY model ASC
+    """)
+    result["models_all"] = [r[0] for r in cur.fetchall()]
+
     # --- Daily breakdown ---
     cur.execute(f"""
         SELECT
             date(started_at, 'unixepoch') as day,
             COUNT(*) as sessions,
-            SUM(input_tokens) as input_tokens,
-            SUM(output_tokens) as output_tokens,
-            SUM(estimated_cost_usd) as estimated_cost
+            COALESCE(SUM(input_tokens), 0) as input_tokens,
+            COALESCE(SUM(output_tokens), 0) as output_tokens,
+            COALESCE(SUM(estimated_cost_usd), 0) as estimated_cost
         FROM sessions
         WHERE {where_clause}
         GROUP BY day
@@ -174,7 +246,7 @@ def main():
         ORDER BY dow ASC
     """, where_params)
     days_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    dow_data = [dict(r) for r in cur.fetchall()]
+    dow_data = [dict(r) for r in cur.fetchall() if r["dow"] is not None]
     for d in dow_data:
         d["day_name"] = days_names[d["dow"]]
     result["day_of_week"] = dow_data
@@ -193,6 +265,8 @@ def main():
     """, where_params)
     heatmap = {}
     for r in cur.fetchall():
+        if r[0] is None or r[1] is None:
+            continue  # unparseable started_at
         key = f"{r[0]}_{r[1]}"
         heatmap[key] = {"total_tokens": r[2], "sessions": r[3]}
     result["heatmap"] = heatmap
@@ -224,22 +298,25 @@ def main():
     result["top_sessions"] = [dict(r) for r in cur.fetchall()]
 
     # --- Messages by role (last 1000 for sample) ---
-    cur.execute("""
-        SELECT role, COUNT(*) as count, COALESCE(SUM(token_count), 0) as total_tokens
-        FROM messages
-        GROUP BY role
-    """)
+    cur.execute(f"""
+        SELECT m.role, COUNT(*) as count, COALESCE(SUM(m.token_count), 0) as total_tokens
+        FROM messages m
+        JOIN sessions s ON s.id = m.session_id
+        WHERE {where_clause}
+        GROUP BY m.role
+    """, where_params)
     result["messages_by_role"] = [dict(r) for r in cur.fetchall()]
 
     # --- Tool usage ---
-    cur.execute("""
-        SELECT tool_name, COUNT(*) as calls
-        FROM messages
-        WHERE tool_name IS NOT NULL AND tool_name != ''
-        GROUP BY tool_name
+    cur.execute(f"""
+        SELECT m.tool_name, COUNT(*) as calls
+        FROM messages m
+        JOIN sessions s ON s.id = m.session_id
+        WHERE m.tool_name IS NOT NULL AND m.tool_name != '' AND {where_clause}
+        GROUP BY m.tool_name
         ORDER BY calls DESC
         LIMIT 20
-    """)
+    """, where_params)
     result["top_tools"] = [dict(r) for r in cur.fetchall()]
 
     # --- Cost over time ---
