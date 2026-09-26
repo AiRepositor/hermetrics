@@ -51,6 +51,9 @@ export function SessionTable({ sessions, sortable = true, onSessionClick }: Sess
   return (
     <div className="card" style={{ marginBottom: 24 }}>
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -59,6 +62,12 @@ export function SessionTable({ sessions, sortable = true, onSessionClick }: Sess
           cursor: 'pointer',
         }}
         onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
       >
         <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Activity size={16} style={{ color: '#d19a66' }} />
@@ -136,7 +145,7 @@ export function SessionTable({ sessions, sortable = true, onSessionClick }: Sess
                   <td style={{ padding: '8px 12px', textAlign: 'right', color: '#71717a' }}>{s.message_count}</td>
                   <td style={{ padding: '8px 12px', textAlign: 'right', color: '#71717a' }}>{s.tool_call_count}</td>
                   <td style={{ padding: '8px 12px', textAlign: 'right', color: '#71717a' }}>
-                    {s.estimated_cost_usd > 0 ? `$${s.estimated_cost_usd.toFixed(2)}` : '\u2014'}
+                    {s.estimated_cost_usd != null && s.estimated_cost_usd > 0 ? `$${Number(s.estimated_cost_usd).toFixed(2)}` : '\u2014'}
                   </td>
                   <td style={{ padding: '8px 12px', color: '#71717a', fontSize: 12 }}>{fmtTime(s.started_at)}</td>
                 </tr>

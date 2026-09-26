@@ -1,8 +1,14 @@
 export interface Overview {
   total_sessions: number;
   total_messages: number;
+  /** Everything sent to the model: uncached input + cache read + cache write. */
   total_input_tokens: number;
+  /** Hermes' raw input_tokens (the uncached part only). */
+  total_uncached_input_tokens?: number;
   total_output_tokens: number;
+  total_api_calls?: number;
+  /** Sessions whose state.db counters were topped up from Hermes' agent.log. */
+  log_reconciled_sessions?: number;
   total_tokens: number;
   total_tool_calls: number;
   total_cache_read: number;
@@ -55,7 +61,7 @@ export interface SessionStat {
   total_tokens: number;
   message_count: number;
   tool_call_count: number;
-  estimated_cost_usd: number;
+  estimated_cost_usd: number | null;
 }
 
 export interface ToolStat {
@@ -67,6 +73,7 @@ export interface AnalyticsData {
   overview: Overview;
   prev_overview?: { sessions: number; total_tokens: number; tool_calls: number; estimated_cost: number };
   models: ModelStat[];
+  models_all?: string[];
   daily: DailyStat[];
   hourly: HourlyStat[];
   hourly_timeseries: { hour_ts: string; sessions: number; input_tokens: number; output_tokens: number }[];

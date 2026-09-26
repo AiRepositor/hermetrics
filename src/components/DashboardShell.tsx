@@ -77,6 +77,8 @@ export function DashboardShell() {
   // ─── Derived data ───
   const modelList = useMemo(() => {
     if (!data) return [];
+    // Use the unfiltered list so the dropdown keeps all options while a filter is active
+    if (data.models_all && data.models_all.length > 0) return data.models_all;
     return data.models.map(m => m.model);
   }, [data]);
 
@@ -86,9 +88,9 @@ export function DashboardShell() {
       return data.hourly_timeseries.map(d => ({
         label: d.hour_ts.replace(':00', ''),
         ts: d.hour_ts,
-        input: d.input_tokens,
-        output: d.output_tokens,
-        total: (d.input_tokens + d.output_tokens),
+        input: d.input_tokens ?? 0,
+        output: d.output_tokens ?? 0,
+        total: ((d.input_tokens ?? 0) + (d.output_tokens ?? 0)),
         sessions: d.sessions,
       }));
     }
@@ -96,19 +98,20 @@ export function DashboardShell() {
       return data.daily.map(d => ({
         label: fmtDate(d.day),
         date: d.day,
-        input: d.input_tokens,
-        output: d.output_tokens,
-        total: (d.input_tokens + d.output_tokens),
+        input: d.input_tokens ?? 0,
+        output: d.output_tokens ?? 0,
+        total: ((d.input_tokens ?? 0) + (d.output_tokens ?? 0)),
         sessions: d.sessions,
         cost: d.estimated_cost || 0,
       }));
     }
     // weekly
     return data.weekly.map((w: any) => ({
-      label: `Week ${w.week}`,
-      input: w.input_tokens,
-      output: w.output_tokens,
-      total: w.input_tokens + w.output_tokens,
+      // Real data: week = Monday's date (YYYY-MM-DD); sample data: week number.
+      label: typeof w.week === 'number' ? `Week ${w.week}` : `Wk of ${fmtDate(w.week)}`,
+      input: w.input_tokens ?? 0,
+      output: w.output_tokens ?? 0,
+      total: (w.input_tokens ?? 0) + (w.output_tokens ?? 0),
       sessions: w.sessions,
     }));
   }, [data, granularity]);
@@ -133,7 +136,7 @@ export function DashboardShell() {
       String(s.total_tokens),
       String(s.message_count),
       String(s.tool_call_count),
-      s.estimated_cost_usd.toFixed(2),
+      s.estimated_cost_usd != null ? Number(s.estimated_cost_usd).toFixed(2) : '',
       new Date(s.started_at * 1000).toLocaleDateString(),
     ]);
     downloadCSV(`hermetrics-sessions-${dateStr}.csv`, headers, rows);
@@ -248,7 +251,9 @@ export function DashboardShell() {
 
       {/* ─── Footer ─── */}
       <div style={{ textAlign: 'center', color: '#52525b', fontSize: 12, paddingTop: 16, borderTop: '1px solid #1e1e28' }}>
-        Hermetrics · Data from ~/.hermes/state.db · {new Date().toLocaleString()}
+        Hermetrics · Data from ~/.hermes state.db (all profiles)
+        {o.log_reconciled_sessions ? ` · ${o.log_reconciled_sessions} sessions' token counts topped up from agent.log` : ''}
+        {' · '}{new Date().toLocaleString()}
       </div>
 
       <style>{`

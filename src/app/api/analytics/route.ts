@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const days = searchParams.get('days');
     if (days) {
-      filters['days'] = parseInt(days, 10);
+      const parsed = parseInt(days, 10);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        return NextResponse.json(
+          { error: `Invalid 'days' parameter: ${days} (must be a positive integer)` },
+          { status: 400 }
+        );
+      }
+      filters['days'] = parsed;
     }
     const model = searchParams.get('model');
     if (model) {
@@ -20,14 +27,17 @@ export async function GET(request: NextRequest) {
     }
 
     const filtersJson = JSON.stringify(filters);
-    const output = execSync(`python3 ${scriptPath} '${filtersJson.replace(/'/g, "'\\''")}'`, {
+    // No shell: filters (incl. the user-supplied model name) are passed as a plain argv entry.
+    const output = execFileSync('python3', [scriptPath, filtersJson], {
       encoding: 'utf-8',
       timeout: 10000,
+      maxBuffer: 20 * 1024 * 1024,
     });
 
     const data = JSON.parse(output);
     const response = NextResponse.json(data);
-    response.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    // Live data: a cached response would make Refresh show stale numbers for up to a minute.
+    response.headers.set('Cache-Control', 'no-store');
     return response;
   } catch (error: any) {
     console.error('Analytics API error:', error);

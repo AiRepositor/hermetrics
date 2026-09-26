@@ -13,7 +13,7 @@ export function CostChart({ costDaily }: CostChartProps) {
   const chartData = costDaily.length > 0
     ? costDaily.map(d => ({
         label: fmtDate(d.day),
-        cost: parseFloat(d.estimated_cost.toFixed(4)),
+        cost: d.estimated_cost != null ? parseFloat(Number(d.estimated_cost).toFixed(4)) : 0,
       }))
     : [];
 

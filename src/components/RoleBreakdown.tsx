@@ -46,7 +46,7 @@ export function RoleBreakdown({ data }: { data: RoleBreakdownData[] }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: color, fontWeight: 500, textTransform: 'capitalize' }}>{d.role}</span>
                 <span style={{ color: '#71717a' }}>
-                  {d.count.toLocaleString()} msgs · {fmtTokens(d.total_tokens)} tokens
+                  {d.count.toLocaleString()} msgs{d.total_tokens > 0 ? ` · ${fmtTokens(d.total_tokens)} tokens` : ''}
                 </span>
               </div>
               <div style={{ height: 6, borderRadius: 3, background: '#1e1e28', overflow: 'hidden' }}>
